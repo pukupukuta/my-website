@@ -44,18 +44,11 @@ function create() {
     // タップ判定
     this.input.on("pointerdown", () => {
         if (state === "safe") {
-            score++;
-            scoreText.setText("Score: " + score);
-
-            // 成功演出
-            enemy.setFillStyle(0xffff00);
-            this.time.delayedCall(100, () => {
-                enemy.setFillStyle(0x00ff00);
-            });
-
+            onSuccess(this, 1); // ←通常
+        } else if (state === "warning"){
+            onSuccess(this, 3); // ←3倍！
         } else {
-            alert("ゲームオーバー！ スコア: " + score);
-            location.reload();
+            onGameOver();
         }
     });
 
@@ -64,24 +57,88 @@ function create() {
 
 function enemyLoop() {
     this.time.delayedCall(speed, () => {
-        // 攻撃予告
-        enemy.setFillStyle(0xff0000);
-        state = "danger";
 
-        this.time.delayedCall(300, () => {
-            // 戻る
-            enemy.setFillStyle(0x00ff00);
-            state = "safe";
+        // 🟡 予兆
+        enemy.setFillStyle(0xffff00);
+        state = "warning"; // ←これ追加！
 
-            // スピードアップ
-            speed = Math.max(400, speed - 30);
+        // 点滅させる（2回）
+        this.tweens.add({
+            targets: enemy,
+            alpha: 0.3,
+            yoyo: true,
+            repeat: 2,
+            duration: 50,
+            onComplete: () => {
 
-            enemyLoop.call(this);
+                // 🔴 攻撃
+                enemy.setFillStyle(0xff0000);
+                enemy.alpha = 1;
+                state = "danger";
+
+                this.time.delayedCall(300, () => {
+
+                    // 🟢 戻る
+                    enemy.setFillStyle(0x00ff00);
+                    state = "safe";
+
+                    // ランダムスピード
+                    speed = Phaser.Math.Between(400, 1500);
+
+                    enemyLoop.call(this);
+                });
+            }
         });
+
     });
 }
 
 function update() {}
+
+function onSuccess(scene, multiplier) {
+    console.log("成功！ x" + multiplier);
+
+    score += 1 * multiplier;
+    scoreText.setText("Score: " + score);
+
+    scoreText.setScale(1.2);
+    scene.tweens.add({
+        targets: scoreText,
+        scale: 1,
+        duration: 100
+    });
+
+    // GOOD表示も強化できる👇
+    let text = multiplier >= 3 ? "PERFECT!" : "GOOD!";
+
+    let msg = scene.add.text(enemy.x, enemy.y - 100, text, {
+        fontSize: "40px",
+        fill: multiplier >= 3 ? "#ff00ff" : "#ffff00"
+    }).setOrigin(0.5);
+
+    scene.tweens.add({
+        targets: msg,
+        y: 200,
+        alpha: 0,
+        duration: 300,
+        onComplete: () => msg.destroy()
+    });
+
+    scene.cameras.main.shake(100, 0.01);
+
+    // 成功時の演出
+    if (multiplier >= 3) {
+        enemy.setFillStyle(0xffff00); // PERFECT時は黄色
+    } else {
+        enemy.setFillStyle(0x00ff00); // GOOD時は緑
+    }
+}
+
+function onGameOver() {
+    alert("ゲームオーバー！ スコア: " + score);
+    location.reload();
+}
+
 </script>
 
 </body>
