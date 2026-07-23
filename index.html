@@ -88,6 +88,7 @@ function enemyLoop() {
         // 🟡 予兆
         enemy.setFillStyle(0xffff00);
         state = "warning"; // ←これ追加！
+        updateEnemyColor();
 
         // 点滅させる（2回）
         this.tweens.add({
@@ -102,12 +103,14 @@ function enemyLoop() {
                 enemy.setFillStyle(0xff0000);
                 enemy.alpha = 1;
                 state = "danger";
+                updateEnemyColor();
 
                 this.time.delayedCall(300, () => {
 
                     // 🟢 戻る
                     enemy.setFillStyle(0x00ff00);
                     state = "safe";
+                    updateEnemyColor();
 
                     // ランダムスピード
                     speed = Phaser.Math.Between(200, 2000);
@@ -122,17 +125,35 @@ function enemyLoop() {
 
 function update() {}
 
-function onSuccess(scene, multiplier) {
-    console.log("成功！ x" + multiplier);
+function updateEnemyColor() {
 
-    score += 1 * multiplier;
+    if (state === "safe") {
+        enemy.setFillStyle(0x00ff00);
+    }
+
+    if (state === "warning") {
+        enemy.setFillStyle(0xffff00);
+    }
+
+    if (state === "danger") {
+        enemy.setFillStyle(0xff0000);
+    }
+}
+
+function onSuccess(scene, hitMultiplier) {
+    console.log(
+        "成功！ 加算:" + (1 * hitMultiplier * multiplier)
+        + " 倍率x" + multiplier
+    );
+
+    score += 1 * hitMultiplier * multiplier;
 
   // 倍率アップ判定
 if (score >= nextMultiplierScore) {
 
     multiplier++;
 
-    nextMultiplierScore += 20;
+    nextMultiplierScore += 50;
 
     multiplierText.setText(
         "倍率: x" + multiplier
@@ -168,11 +189,11 @@ if (score >= nextMultiplierScore) {
     });
 
     // GOOD表示も強化できる👇
-    let text = multiplier >= 3 ? "PERFECT!" : "GOOD!";
+    let text = hitMultiplier >= 3 ? "PERFECT!" : "GOOD!";
 
     let msg = scene.add.text(enemy.x, enemy.y - 100, text, {
         fontSize: "40px",
-        fill: multiplier >= 3 ? "#ff00ff" : "#ffff00"
+        fill: hitMultiplier >= 3 ? "#ff00ff" : "#ffff00"
     }).setOrigin(0.5);
 
     scene.tweens.add({
@@ -184,13 +205,6 @@ if (score >= nextMultiplierScore) {
     });
 
     scene.cameras.main.shake(100, 0.01);
-
-    // 成功時の演出
-    if (multiplier >= 3) {
-        enemy.setFillStyle(0xffff00); // PERFECT時は黄色
-    } else {
-        enemy.setFillStyle(0x00ff00); // GOOD時は緑
-    }
 }
 
 function onGameOver() {
