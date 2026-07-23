@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Avoid & Strike</title>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+  <style>
+    body { margin: 0; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+
+<script>
+const config = {
+    type: Phaser.AUTO,
+    width: 400,
+    height: 700,
+    backgroundColor: "#222",
+    scene: {
+        create: create,
+        update: update
+    }
+};
+
+let game = new Phaser.Game(config);
+
+let enemy;
+let state = "safe";
+let score = 0;
+let scoreText;
+let speed = 1500; // ミリ秒
+
+function create() {
+    // 敵
+    enemy = this.add.rectangle(200, 350, 150, 150, 0x00ff00);
+
+    // スコア
+    scoreText = this.add.text(20, 20, "Score: 0", {
+        fontSize: "24px",
+        fill: "#fff"
+    });
+
+    // タップ判定
+    this.input.on("pointerdown", () => {
+        if (state === "safe") {
+            score++;
+            scoreText.setText("Score: " + score);
+
+            // 成功演出
+            enemy.setFillStyle(0xffff00);
+            this.time.delayedCall(100, () => {
+                enemy.setFillStyle(0x00ff00);
+            });
+
+        } else {
+            alert("ゲームオーバー！ スコア: " + score);
+            location.reload();
+        }
+    });
+
+    enemyLoop.call(this);
+}
+
+function enemyLoop() {
+    this.time.delayedCall(speed, () => {
+        // 攻撃予告
+        enemy.setFillStyle(0xff0000);
+        state = "danger";
+
+        this.time.delayedCall(300, () => {
+            // 戻る
+            enemy.setFillStyle(0x00ff00);
+            state = "safe";
+
+            // スピードアップ
+            speed = Math.max(400, speed - 30);
+
+            enemyLoop.call(this);
+        });
+    });
+}
+
+function update() {}
+</script>
+
+</body>
+</html>
