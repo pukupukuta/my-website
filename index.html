@@ -5,7 +5,7 @@
   <title>Avoid & Strike</title>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
   <style>
-    body { margin: 0; }
+    body { margin: 0; overflow: hidden; }
     canvas { display: block; }
   </style>
 </head>
@@ -14,8 +14,8 @@
 <script>
 const config = {
     type: Phaser.AUTO,
-    width: 400,
-    height: 700,
+    width: window.innerWidth,
+    height: window.innerHeight,
     backgroundColor: "#222",
     scene: {
         create: create,
