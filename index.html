@@ -40,10 +40,14 @@ let enemy;
 let state = "safe";
 let score = 0;
 let scoreText;
-
+let comboScore = 0;
 let multiplier = 1;
 let nextMultiplierScore = 10;
 let multiplierText;
+
+let gaugeBg;
+let gaugeBar;
+let gaugeText;
 
 let speed = 1500; // ミリ秒
 
@@ -67,6 +71,35 @@ function create() {
         fontSize: "24px",
         fill: "#ffff00"
     });
+
+// 倍率ゲージ背景
+gaugeBg = this.add.rectangle(
+    150,
+    95,
+    260,
+    20,
+    0x555555
+);
+
+// 倍率ゲージ本体
+gaugeBar = this.add.rectangle(
+    20,
+    95,
+    0,
+    20,
+    0x00ffff
+).setOrigin(0,0.5);
+
+// ゲージ文字
+gaugeText = this.add.text(
+    20,
+    120,
+    "",
+    {
+        fontSize: "18px",
+        fill: "#ffffff"
+    }
+);
 
     // タップ判定
     this.input.on("pointerdown", () => {
@@ -140,24 +173,70 @@ function updateEnemyColor() {
     }
 }
 
+function updateGauge() {
+
+    let progress = comboScore / nextMultiplierScore;
+
+    let width = 260 * progress;
+
+    gaugeBar.width = width;
+
+
+    // ゲージ色変化
+    if (progress < 0.6) {
+
+        gaugeBar.setFillStyle(0x00ffff); // 水色
+
+    } else if (progress < 0.9) {
+
+        gaugeBar.setFillStyle(0xffff00); // 黄色
+
+    } else {
+
+        gaugeBar.setFillStyle(0xff0000); // 赤
+
+    }
+
+
+    gaugeText.setText(
+        "NEXT x" + (multiplier + 1) +
+        "  " +
+        Math.floor(progress * 100) +
+        "%"
+    );
+}
+
 function onSuccess(scene, hitMultiplier) {
     console.log(
         "成功！ 加算:" + (1 * hitMultiplier * multiplier)
         + " 倍率x" + multiplier
     );
 
-    score += 1 * hitMultiplier * multiplier;
+    // 加算値計算
+    let gain = 1 * hitMultiplier;
 
-  // 倍率アップ判定
-if (score >= nextMultiplierScore) {
+    score += gain * multiplier;
+    comboScore += gain;
 
-    multiplier++;
+    let isLevelUp = false;
 
-    nextMultiplierScore += 50;
+    if (comboScore >= nextMultiplierScore) {
 
-    multiplierText.setText(
-        "倍率: x" + multiplier
-    );
+        multiplier++;
+
+        comboScore = 0;
+
+        gaugeBar.width = 0;
+
+        nextMultiplierScore = Math.floor(nextMultiplierScore * 3);
+
+        multiplierText.setText("倍率: x" + multiplier);
+
+        isLevelUp = true;
+    }
+
+
+if (isLevelUp) {
 
     let levelUp = scene.add.text(
         enemy.x,
@@ -177,9 +256,13 @@ if (score >= nextMultiplierScore) {
         duration: 800,
         onComplete: () => levelUp.destroy()
     });
+
 }
+
   
     scoreText.setText("Score: " + score);
+ 
+    updateGauge();
 
     scoreText.setScale(1.2);
     scene.tweens.add({
@@ -188,7 +271,7 @@ if (score >= nextMultiplierScore) {
         duration: 100
     });
 
-    // GOOD表示も強化できる👇
+    // GOOD表示も強化できる
     let text = hitMultiplier >= 3 ? "PERFECT!" : "GOOD!";
 
     let msg = scene.add.text(enemy.x, enemy.y - 100, text, {
