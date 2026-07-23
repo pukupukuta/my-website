@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Avoid & Strike</title>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
   <style>
@@ -14,12 +15,12 @@
 <script>
 const config = {
     type: Phaser.AUTO,
-    width: 200,
-    height: 1000,
     backgroundColor: "#222",
   
     scale: {
         mode: Phaser.Scale.RESIZE,
+        width: window.innerWidth,
+        height: window.innerHeight,
         autoCenter: Phaser.Scale.CENTER_BOTH
     },
 
@@ -39,7 +40,13 @@ let speed = 1500; // ミリ秒
 
 function create() {
     // 敵
-    enemy = this.add.rectangle(200, 350, 150, 150, 0x00ff00);
+    enemy = this.add.rectangle(
+        this.scale.width / 2,
+        this.scale.height / 2,
+        150,
+        150,
+        0x00ff00
+    );
 
     // スコア
     scoreText = this.add.text(20, 20, "Score: 0", {
