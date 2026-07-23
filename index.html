@@ -40,6 +40,11 @@ let enemy;
 let state = "safe";
 let score = 0;
 let scoreText;
+
+let multiplier = 1;
+let nextMultiplierScore = 10;
+let multiplierText;
+
 let speed = 1500; // ミリ秒
 
 function create() {
@@ -56,6 +61,11 @@ function create() {
     scoreText = this.add.text(20, 20, "Score: 0", {
         fontSize: "24px",
         fill: "#fff"
+    });
+
+    multiplierText = this.add.text(20, 55, "倍率: x1", {
+        fontSize: "24px",
+        fill: "#ffff00"
     });
 
     // タップ判定
@@ -116,6 +126,38 @@ function onSuccess(scene, multiplier) {
     console.log("成功！ x" + multiplier);
 
     score += 1 * multiplier;
+
+  // 倍率アップ判定
+if (score >= nextMultiplierScore) {
+
+    multiplier++;
+
+    nextMultiplierScore += 20;
+
+    multiplierText.setText(
+        "倍率: x" + multiplier
+    );
+
+    let levelUp = scene.add.text(
+        enemy.x,
+        enemy.y - 120,
+        "倍率UP! x" + multiplier,
+        {
+            fontSize: "36px",
+            fill: "#00ffff"
+        }
+    ).setOrigin(0.5);
+
+
+    scene.tweens.add({
+        targets: levelUp,
+        y: 200,
+        alpha: 0,
+        duration: 800,
+        onComplete: () => levelUp.destroy()
+    });
+}
+  
     scoreText.setText("Score: " + score);
 
     scoreText.setScale(1.2);
