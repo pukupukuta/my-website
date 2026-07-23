@@ -14,9 +14,15 @@
 <script>
 const config = {
     type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
+    width: 400,
+    height: 700,
     backgroundColor: "#222",
+  
+    scale: {
+        mode: Phaser.Scale.FIT,
+        autoCenter: Phaser.Scale.CENTER_BOTH
+    },
+
     scene: {
         create: create,
         update: update
