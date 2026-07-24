@@ -380,8 +380,10 @@
         function onGameOver() {
             missSound.stop();
             missSound.play();
-            alert("ゲームオーバー！ スコア: " + score);
-            location.reload();
+            setTimeout(() => {
+                alert("ゲームオーバー！ スコア: " + score);
+                location.reload();
+            }, 100);
         }
 
     </script>
