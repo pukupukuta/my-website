@@ -378,6 +378,7 @@
         }
 
         function onGameOver() {
+            missSound.stop();
             missSound.play();
             alert("ゲームオーバー！ スコア: " + score);
             location.reload();
