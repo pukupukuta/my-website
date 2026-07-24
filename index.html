@@ -1,301 +1,390 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Avoid & Strike</title>
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-  <style>
-    body {
-    margin: 0;
-    overflow: hidden; }
-    canvas { display: block; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avoid & Strike</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
 </head>
+
 <body>
 
-<script>
-const config = {
-    type: Phaser.AUTO,
+    <script>
+        const config = {
+            type: Phaser.AUTO,
 
-    width: 500,
-    height: 700,
-  
-    backgroundColor: "#222",
-  
-    scale: {
-        mode: Phaser.Scale.FIT,
-        autoCenter: Phaser.Scale.CENTER_BOTH
-    },
+            width: 500,
+            height: 700,
 
-    scene: {
-        create: create,
-        update: update
-    }
-};
+            backgroundColor: "#222",
 
-let game = new Phaser.Game(config);
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH
+            },
 
-let enemy;
-let state = "safe";
-let score = 0;
-let scoreText;
-let comboScore = 0;
-let multiplier = 1;
-let nextMultiplierScore = 10;
-let multiplierText;
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
 
-let gaugeBg;
-let gaugeBar;
-let gaugeText;
+        let game = new Phaser.Game(config);
 
-let speed = 1500; // ミリ秒
+        let enemy;
+        let state = "safe";
+        let score = 0;
+        let scoreText;
+        let comboScore = 0;
+        let multiplier = 1;
+        let nextMultiplierScore = 10;
+        let multiplierText;
 
-function create() {
-    // 敵
-    enemy = this.add.rectangle(
-        this.scale.width / 2,
-        this.scale.height / 2,
-        150,
-        150,
-        0x00ff00
-    );
+        let gaugeBg;
+        let gaugeBar;
+        let gaugeText;
 
-    // スコア
-    scoreText = this.add.text(20, 20, "Score: 0", {
-        fontSize: "24px",
-        fill: "#fff"
-    });
+        let speed = 1500; // ミリ秒
 
-    multiplierText = this.add.text(20, 55, "倍率: x1", {
-        fontSize: "24px",
-        fill: "#ffff00"
-    });
+        let tapSound;
+        let perfectSound;
+        let missSound;
 
-// 倍率ゲージ背景
-gaugeBg = this.add.rectangle(
-    150,
-    95,
-    260,
-    20,
-    0x555555
-);
 
-// 倍率ゲージ本体
-gaugeBar = this.add.rectangle(
-    20,
-    95,
-    0,
-    20,
-    0x00ffff
-).setOrigin(0,0.5);
+        function preload() {
 
-// ゲージ文字
-gaugeText = this.add.text(
-    20,
-    120,
-    "",
-    {
-        fontSize: "18px",
-        fill: "#ffffff"
-    }
-);
+            this.load.audio(
+                "tap",
+                "imo_1.wav"
+            );
 
-    // タップ判定
-    this.input.on("pointerdown", () => {
-        if (state === "safe") {
-            onSuccess(this, 1); // ←通常
-        } else if (state === "warning"){
-            onSuccess(this, 3); // ←3倍！
-        } else {
-            onGameOver();
+            this.load.audio(
+                "perfect",
+                "imo_2.wav"
+            );
+
+            this.load.audio(
+                "miss",
+                "imo_3.wav"
+            );
+
+            this.load.audio(
+                "bgm",
+                "bgm.mp3"
+            );
+
+            this.load.on('loaderror', (file) => {
+                console.log("ロード失敗:", file.key);
+            });
         }
-    });
 
-    enemyLoop.call(this);
-}
+        function create() {
 
-function enemyLoop() {
-    this.time.delayedCall(speed, () => {
+            this.gameStarted = false;
 
-        // 🟡 予兆
-        enemy.setFillStyle(0xffff00);
-        state = "warning"; // ←これ追加！
-        updateEnemyColor();
+            tapSound = this.sound.add("tap");
+            perfectSound = this.sound.add("perfect");
+            missSound = this.sound.add("miss");
 
-        // 点滅させる（2回）
-        this.tweens.add({
-            targets: enemy,
-            alpha: 0.3,
-            yoyo: true,
-            repeat: 2,
-            duration: 50,
-            onComplete: () => {
+            const startButton = this.add.text(
+                this.cameras.main.centerX,              // 横中央
+                this.cameras.main.height - 100,         // 下から100px
+                "START",
+                {
+                    fontSize: "50px",
+                    fill: "#ffffff",
+                    backgroundColor: "#0066ff",
+                    padding: {
+                        x: 40,
+                        y: 20
+                    }
+                }
+            )
+                .setOrigin(0.5)
+                .setInteractive();
 
-                // 🔴 攻撃
-                enemy.setFillStyle(0xff0000);
-                enemy.alpha = 1;
-                state = "danger";
+            this.bgm = this.sound.add("bgm", {
+                loop: true,
+                volume: 0.4
+            });
+
+            startButton.on("pointerdown", () => {
+
+                this.gameStarted = true;
+
+                startButton.destroy();
+
+                this.bgm.play();
+
+            });
+
+
+
+            // 敵
+            enemy = this.add.rectangle(
+                this.scale.width / 2,
+                this.scale.height / 2,
+                150,
+                150,
+                0x00ff00
+            );
+
+            // スコア
+            scoreText = this.add.text(20, 20, "Score: 0", {
+                fontSize: "24px",
+                fill: "#fff"
+            });
+
+            multiplierText = this.add.text(20, 55, "倍率: x1", {
+                fontSize: "24px",
+                fill: "#ffff00"
+            });
+
+            // 倍率ゲージ背景
+            gaugeBg = this.add.rectangle(
+                150,
+                95,
+                260,
+                20,
+                0x555555
+            );
+
+            // 倍率ゲージ本体
+            gaugeBar = this.add.rectangle(
+                20,
+                95,
+                0,
+                20,
+                0x00ffff
+            ).setOrigin(0, 0.5);
+
+            // ゲージ文字
+            gaugeText = this.add.text(
+                20,
+                120,
+                "",
+                {
+                    fontSize: "18px",
+                    fill: "#ffffff"
+                }
+            );
+
+            // タップ判定
+            this.input.on("pointerdown", () => {
+                if (state === "safe") {
+                    onSuccess(this, 1); // ←通常
+                } else if (state === "warning") {
+                    onSuccess(this, 3); // ←3倍！
+                } else {
+                    onGameOver();
+                }
+            });
+
+            enemyLoop.call(this);
+        }
+
+        function enemyLoop() {
+            this.time.delayedCall(speed, () => {
+
+                // 🟡 予兆
+                enemy.setFillStyle(0xffff00);
+                state = "warning"; // ←これ追加！
                 updateEnemyColor();
 
-                this.time.delayedCall(300, () => {
+                // 点滅させる（2回）
+                this.tweens.add({
+                    targets: enemy,
+                    alpha: 0.3,
+                    yoyo: true,
+                    repeat: 2,
+                    duration: 50,
+                    onComplete: () => {
 
-                    // 🟢 戻る
-                    enemy.setFillStyle(0x00ff00);
-                    state = "safe";
-                    updateEnemyColor();
+                        // 🔴 攻撃
+                        enemy.setFillStyle(0xff0000);
+                        enemy.alpha = 1;
+                        state = "danger";
+                        updateEnemyColor();
 
-                    // ランダムスピード
-                    speed = Phaser.Math.Between(200, 2000);
+                        this.time.delayedCall(300, () => {
 
-                    enemyLoop.call(this);
+                            // 🟢 戻る
+                            enemy.setFillStyle(0x00ff00);
+                            state = "safe";
+                            updateEnemyColor();
+
+                            // ランダムスピード
+                            speed = Phaser.Math.Between(200, 2000);
+
+                            enemyLoop.call(this);
+                        });
+                    }
                 });
-            }
-        });
 
-    });
-}
-
-function update() {}
-
-function updateEnemyColor() {
-
-    if (state === "safe") {
-        enemy.setFillStyle(0x00ff00);
-    }
-
-    if (state === "warning") {
-        enemy.setFillStyle(0xffff00);
-    }
-
-    if (state === "danger") {
-        enemy.setFillStyle(0xff0000);
-    }
-}
-
-function updateGauge() {
-
-    let progress = comboScore / nextMultiplierScore;
-
-    let width = 260 * progress;
-
-    gaugeBar.width = width;
-
-
-    // ゲージ色変化
-    if (progress < 0.6) {
-
-        gaugeBar.setFillStyle(0x00ffff); // 水色
-
-    } else if (progress < 0.9) {
-
-        gaugeBar.setFillStyle(0xffff00); // 黄色
-
-    } else {
-
-        gaugeBar.setFillStyle(0xff0000); // 赤
-
-    }
-
-
-    gaugeText.setText(
-        "NEXT x" + (multiplier + 1) +
-        "  " +
-        Math.floor(progress * 100) +
-        "%"
-    );
-}
-
-function onSuccess(scene, hitMultiplier) {
-    console.log(
-        "成功！ 加算:" + (1 * hitMultiplier * multiplier)
-        + " 倍率x" + multiplier
-    );
-
-    // 加算値計算
-    let gain = 1 * hitMultiplier;
-
-    score += gain * multiplier;
-    comboScore += gain;
-
-    let isLevelUp = false;
-
-    if (comboScore >= nextMultiplierScore) {
-
-        multiplier++;
-
-        comboScore = 0;
-
-        gaugeBar.width = 0;
-
-        nextMultiplierScore = Math.floor(nextMultiplierScore * 3);
-
-        multiplierText.setText("倍率: x" + multiplier);
-
-        isLevelUp = true;
-    }
-
-
-if (isLevelUp) {
-
-    let levelUp = scene.add.text(
-        enemy.x,
-        enemy.y - 120,
-        "倍率UP! x" + multiplier,
-        {
-            fontSize: "36px",
-            fill: "#00ffff"
+            });
         }
-    ).setOrigin(0.5);
+
+        function update() { }
+
+        function updateEnemyColor() {
+
+            if (state === "safe") {
+                enemy.setFillStyle(0x00ff00);
+            }
+
+            if (state === "warning") {
+                enemy.setFillStyle(0xffff00);
+            }
+
+            if (state === "danger") {
+                enemy.setFillStyle(0xff0000);
+            }
+        }
+
+        function updateGauge() {
+
+            let progress = comboScore / nextMultiplierScore;
+
+            let width = 260 * progress;
+
+            gaugeBar.width = width;
 
 
-    scene.tweens.add({
-        targets: levelUp,
-        y: 200,
-        alpha: 0,
-        duration: 800,
-        onComplete: () => levelUp.destroy()
-    });
+            // ゲージ色変化
+            if (progress < 0.6) {
 
-}
+                gaugeBar.setFillStyle(0x00ffff); // 水色
 
-  
-    scoreText.setText("Score: " + score);
- 
-    updateGauge();
+            } else if (progress < 0.9) {
 
-    scoreText.setScale(1.2);
-    scene.tweens.add({
-        targets: scoreText,
-        scale: 1,
-        duration: 100
-    });
+                gaugeBar.setFillStyle(0xffff00); // 黄色
 
-    // GOOD表示も強化できる
-    let text = hitMultiplier >= 3 ? "PERFECT!" : "GOOD!";
+            } else {
 
-    let msg = scene.add.text(enemy.x, enemy.y - 100, text, {
-        fontSize: "40px",
-        fill: hitMultiplier >= 3 ? "#ff00ff" : "#ffff00"
-    }).setOrigin(0.5);
+                gaugeBar.setFillStyle(0xff0000); // 赤
 
-    scene.tweens.add({
-        targets: msg,
-        y: 200,
-        alpha: 0,
-        duration: 300,
-        onComplete: () => msg.destroy()
-    });
+            }
 
-    scene.cameras.main.shake(100, 0.01);
-}
 
-function onGameOver() {
-    alert("ゲームオーバー！ スコア: " + score);
-    location.reload();
-}
+            gaugeText.setText(
+                "NEXT x" + (multiplier + 1) +
+                "  " +
+                Math.floor(progress * 100) +
+                "%"
+            );
+        }
 
-</script>
+        function onSuccess(scene, hitMultiplier) {
+
+            if (hitMultiplier >= 3) {
+                perfectSound.play();
+            } else {
+                tapSound.play();
+            }
+
+            console.log(
+                "成功！ 加算:" + (1 * hitMultiplier * multiplier)
+                + " 倍率x" + multiplier
+            );
+
+            // 加算値計算
+            let gain = 1 * hitMultiplier;
+
+            score += gain * multiplier;
+            comboScore += gain;
+
+            let isLevelUp = false;
+
+            if (comboScore >= nextMultiplierScore) {
+
+                multiplier++;
+
+                comboScore = 0;
+
+                gaugeBar.width = 0;
+
+                nextMultiplierScore = Math.floor(nextMultiplierScore * 3);
+
+                multiplierText.setText("倍率: x" + multiplier);
+
+                isLevelUp = true;
+            }
+
+
+            if (isLevelUp) {
+
+                let levelUp = scene.add.text(
+                    enemy.x,
+                    enemy.y - 120,
+                    "倍率UP! x" + multiplier,
+                    {
+                        fontSize: "36px",
+                        fill: "#00ffff"
+                    }
+                ).setOrigin(0.5);
+
+
+                scene.tweens.add({
+                    targets: levelUp,
+                    y: 200,
+                    alpha: 0,
+                    duration: 800,
+                    onComplete: () => levelUp.destroy()
+                });
+
+            }
+
+
+            scoreText.setText("Score: " + score);
+
+            updateGauge();
+
+            scoreText.setScale(1.2);
+            scene.tweens.add({
+                targets: scoreText,
+                scale: 1,
+                duration: 100
+            });
+
+            // GOOD表示も強化できる
+            let text = hitMultiplier >= 3 ? "PERFECT!" : "GOOD!";
+
+            let msg = scene.add.text(enemy.x, enemy.y - 100, text, {
+                fontSize: "40px",
+                fill: hitMultiplier >= 3 ? "#ff00ff" : "#ffff00"
+            }).setOrigin(0.5);
+
+            scene.tweens.add({
+                targets: msg,
+                y: 200,
+                alpha: 0,
+                duration: 300,
+                onComplete: () => msg.destroy()
+            });
+
+            scene.cameras.main.shake(100, 0.01);
+        }
+
+        function onGameOver() {
+            missSound.play();
+            alert("ゲームオーバー！ スコア: " + score);
+            location.reload();
+        }
+
+    </script>
 
 </body>
+
 </html>
