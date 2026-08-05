@@ -19,7 +19,6 @@
 </head>
 
 <body>
-
     <script>
         const config = {
             type: Phaser.AUTO,
@@ -378,15 +377,12 @@
         }
 
         function onGameOver() {
-            setTimeout(() => {
-                alert("ゲームオーバー！ スコア: " + score);
-                location.reload();
-            }, 100);
             missSound.play();
+            alert("ゲームオーバー！ スコア: " + score);
+            location.reload();
         }
 
     </script>
-
 </body>
 
 </html>
