@@ -64,6 +64,22 @@
 
         function preload() {
 
+
+            this.load.image(
+                "enemy_green",
+                "enemy_green.png"
+            );
+
+            this.load.image(
+                "enemy_yellow",
+                "enemy_yellow.png"
+            );
+
+            this.load.image(
+                "enemy_red",
+                "enemy_red.png"
+            );
+
             this.load.audio(
                 "tap",
                 "imo_1.wav"
@@ -132,13 +148,13 @@
 
 
             // 敵
-            enemy = this.add.rectangle(
+            enemy = this.add.image(
                 this.scale.width / 2,
                 this.scale.height / 2,
-                150,
-                150,
-                0x00ff00
+                "enemy_green"
             );
+
+            enemy.setDisplaySize(200, 200);
 
             // スコア
             scoreText = this.add.text(20, 20, "Score: 0", {
@@ -198,7 +214,7 @@
             this.time.delayedCall(speed, () => {
 
                 // 🟡 予兆
-                enemy.setFillStyle(0xffff00);
+                enemy.setTexture("enemy_yellow");
                 state = "warning"; // ←これ追加！
                 updateEnemyColor();
 
@@ -212,7 +228,7 @@
                     onComplete: () => {
 
                         // 🔴 攻撃
-                        enemy.setFillStyle(0xff0000);
+                        enemy.setTexture("enemy_red");
                         enemy.alpha = 1;
                         state = "danger";
                         updateEnemyColor();
@@ -220,7 +236,7 @@
                         this.time.delayedCall(300, () => {
 
                             // 🟢 戻る
-                            enemy.setFillStyle(0x00ff00);
+                            enemy.setTexture("enemy_green");
                             state = "safe";
                             updateEnemyColor();
 
@@ -240,15 +256,15 @@
         function updateEnemyColor() {
 
             if (state === "safe") {
-                enemy.setFillStyle(0x00ff00);
+                enemy.setTexture("enemy_green");
             }
 
             if (state === "warning") {
-                enemy.setFillStyle(0xffff00);
+                enemy.setTexture("enemy_yellow");
             }
 
             if (state === "danger") {
-                enemy.setFillStyle(0xff0000);
+                enemy.setTexture("enemy_red");
             }
         }
 
@@ -378,7 +394,7 @@
 
         function onGameOver() {
             missSound.play();
-            
+
             missSound.once("complete", () => {
                 alert("ゲームオーバー！ スコア: " + score);
                 location.reload();
